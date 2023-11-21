@@ -23,6 +23,7 @@ class Order extends Model
         'register',
         'total',
         'type',
+        'variant',
         'status',
         'ledgers_id',
         'customers_id',
@@ -38,6 +39,7 @@ class Order extends Model
         'bv_reseller_amount',
         'token_no',
         'status_delivery',
+        'firebase_threads_id',
     ];
 
     public function customers()
@@ -52,9 +54,10 @@ class Order extends Model
 
     public function availabilities()
     {
-        return $this->belongsToMany(Availability::class, 'order_availability', 'order_id', 'availability_id')
+        return $this->belongsToMany(Availability::class, 'order_availability', 'order_id', 'availability_id')->with('days')->with('clinicCustomers')
             ->withPivot([
                 'date',
+                'qr_code',
             ])
             ->select(['availabilities.*']);
     }
@@ -89,6 +92,25 @@ class Order extends Model
             'status',
             'customers_id',
         ]);
+    }
+
+    public function scopeFilterExpertDateDay($query)
+    {
+        if (!empty(request()->input('date'))) {
+            $day_num = date("w", strtotime(request()->input('date'))) + 1;
+            return $query->where('availabilities.day_id', $day_num);
+        } else {
+            return;
+        }
+    }
+
+    public function scopeFilterExpert($query)
+    {
+        if (!empty(request()->input('expert_id'))) {
+            return $query->where('clinic_customer.customer_id', request()->input('expert_id'));
+        } else {
+            return;
+        }
     }
 
     public function scopeFilterInput($query)

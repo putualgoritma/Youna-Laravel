@@ -234,6 +234,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::delete('availabilities/destroy', 'AvailabilitiesController@massDestroy')->name('availabilities.massDestroy');
     Route::resource('availabilities', 'AvailabilitiesController');
 
+    //reservation
+    Route::get('orders/reservation-approved/{id}', 'OrdersController@reservationApproved')->name('orders.reservationApproved');
+    Route::put('orders-reservation-approved-process', 'OrdersController@reservationApprovedProcess')->name('orders.reservationApprovedProcess');
+
 });
 
 Route::group(['prefix' => 'admin', 'as' => 'midtrans.', 'namespace' => 'Admin'], function () {

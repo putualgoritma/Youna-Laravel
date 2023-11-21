@@ -39,18 +39,19 @@ class ReservationClass
         $register = date("Y-m-d");
         $last_code = $this->get_last_code('order-reservation');
         $order_code = acc_code_generate($last_code, 8, 3);
-        $data = array('memo' => $this->reservationRequest->memo, 'total' => 0, 'type' => 'reservation', 'status' => 'pending', 'ledgers_id' => $ledger_id, 'customers_id' => $this->reservationRequest->customers_id, 'agents_id' => 0, 'payment_type' => 'point', 'code' => $order_code, 'register' => $register, 'bv_activation_amount' => 0, 'customers_activation_id' => $this->reservationRequest->customers_id, 'bv_total' => 0, 'activation_type_id' => 0);
+        $data = array('variant' => $this->reservationRequest->variant, 'memo' => $this->reservationRequest->memo, 'total' => 0, 'type' => 'reservation', 'status' => 'pending', 'ledgers_id' => $ledger_id, 'customers_id' => $this->reservationRequest->customers_id, 'agents_id' => 0, 'payment_type' => 'point', 'code' => $order_code, 'register' => $register, 'bv_activation_amount' => 0, 'customers_activation_id' => $this->reservationRequest->customers_id, 'bv_total' => 0, 'activation_type_id' => 0);
         $order = Order::create($data);
         return $order;
     }
 
     public function orderReservationSet($order)
     {
-        $cart_arr = $this->reservationRequest->cart['item'];
-        $count_cart = count($cart_arr);
-        for ($i = 0; $i < $count_cart; $i++) {
-            //set order availabilities
-            $order->availabilities()->attach($cart_arr[$i]['id'], ['date' => $cart_arr[$i]['date']]);
-        }
+        // $cart_arr = $this->reservationRequest->cart['item'];
+        // $count_cart = count($cart_arr);
+        // for ($i = 0; $i < $count_cart; $i++) {
+        //set order availabilities
+        $qr_code = bcrypt($order->register . "-" . $order->id . "-" . $this->reservationRequest->schedule_id);
+        $order->availabilities()->attach($this->reservationRequest->schedule_id, ['date' => $this->reservationRequest->date, 'qr_code' => $qr_code]);
+        // }
     }
 }

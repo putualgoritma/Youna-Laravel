@@ -75,15 +75,15 @@ Route::group(['prefix' => 'close', 'namespace' => 'Api\V1\Admin', 'middleware' =
     Route::get('delivery-agent-update/{id}', 'OrdersApiController@deliveryAgentUpdate');
     Route::get('delivery-member-update/{id}', 'OrdersApiController@deliveryMemberUpdate');
     Route::get('/products-member', 'ProductsApiController@indexMember');
-    Route::get('/products-agent', 'ProductsApiController@indexAgent');   
-    Route::post('/logs', 'CustomersApiController@logs'); 
+    Route::get('/products-agent', 'ProductsApiController@indexAgent');
+    Route::post('/logs', 'CustomersApiController@logs');
     Route::post('/logs-unread', 'CustomersApiController@logsUnread');
     Route::get('logs-update-status/{id}', 'CustomersApiController@logsUpdate');
     Route::post('/upload-img/{id}', 'CustomersApiController@upImg');
 
-    
+
     Route::get('/products-member-agent', 'ProductsApiController@indexMemberAgent');
-    
+
     //tree
     Route::get('member-tree', 'CustomersApiController@downlineTree');
     // Route::get('downline-test/{id}', 'CustomersApiController@downlineTest');
@@ -158,7 +158,14 @@ Route::group(['prefix' => 'close', 'namespace' => 'Api\V1\Admin', 'middleware' =
     //reservation
     Route::post('reservation', 'CustomersApiController@reservation');
     Route::get('reservation-history', 'CustomersApiController@reservationHistory');
+    Route::get('reservation-expert-history', 'CustomersApiController@reservationExpertHistory');
+    Route::get('reservation-history-details', 'CustomersApiController@reservationHistoryDetails');
+    Route::get('reservation-received', 'CustomersApiController@recervationReceived');
 
+    // perubahan 13-11-2023 start
+    Route::post('reservation-status', 'CustomersApiController@recervationStatus');
+    Route::post('reservation-pushOnesignal', 'CustomersApiController@pushOnesignal');
+    // perubahan 13-11-2023 end
     //test
     Route::get('test/{id}', 'OrdersApiController@test');
 });

@@ -481,6 +481,8 @@ return [
             'updated_at_helper' => '',
             'deleted_at' => 'Deleted at',
             'deleted_at_helper' => '',
+            'availabilities' => 'Jadwal Konsultasi',
+            'availabilities_helper' => '',
         ],
     ],
     'ledger' => [

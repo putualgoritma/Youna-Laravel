@@ -38,10 +38,7 @@ class Availability extends Model
     public function scopeFilterDateDay($query)
     {
         if (!empty(request()->input('date'))) {
-            $day_num = date("w", strtotime(request()->input('date')));
-            if ($day_num == 0) {
-                $day_num = 7;
-            }
+            $day_num = date("w", strtotime(request()->input('date'))) + 1;
             return $query->where('day_id', $day_num);
         } else {
             return;

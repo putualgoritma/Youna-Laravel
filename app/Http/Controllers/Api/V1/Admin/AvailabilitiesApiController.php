@@ -64,9 +64,18 @@ class AvailabilitiesApiController extends Controller
         $availability->update($data);
     }
 
+
+    public function updateStatus(Request $request)
+    {
+        //check if exist
+        $start = $request->start . ":00";
+        $end = $request->end . ":00";
+        $data = ['clinic_customer_id' => $request->clinic_customer_id, 'day_id' => $request->day_id, 'start' => $request->start, 'end' => $request->end];
+        $availability->update($data);
+    }
+
     public function show(Availability $availability)
     {
-
     }
 
     public function destroy(Availability $availability)

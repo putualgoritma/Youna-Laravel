@@ -132,12 +132,15 @@
                                 {{ trans('global.order.fields.products') }}
                             </th>
                             <th>
+                                {{ trans('global.order.fields.availabilities') }}
+                            </th>
+                            <th>
                                 &nbsp;
                             </th>
                         </tr>
                     </thead>
                     <tfoot align="left">
-                        <tr><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+                        <tr><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
                     </tfoot>
                 </table>
             </div>
@@ -244,6 +247,7 @@
         { data: 'accpay', name: 'accpay',  searchable: false  },
         { data: 'amount', name: 'amount', searchable: false},
         { data: 'product', name: 'product',searchable: false },
+        { data: 'availability', name: 'availability',searchable: false },
         { data: 'actions', name: '{{ trans('global.actions') }}' }
     ],
     pageLength: 100,
@@ -261,15 +265,15 @@
  
             // computing column Total of the complete result 
             var Total = api
-                .column( 9 )
+                .column( 10 )
                 .data()
                 .reduce( function (a, b) {
                     return intVal(a) + intVal(b);
                 }, 0 );
 				
 	    // Update footer by showing the total with the reference of the column index 
-	    $( api.column( 8 ).footer() ).html('Total');
-        $( api.column( 9 ).footer() ).html(Total.toLocaleString("en-GB"));
+	    $( api.column( 9 ).footer() ).html('Total');
+        $( api.column( 10 ).footer() ).html(Total.toLocaleString("en-GB"));
         },
   };
 

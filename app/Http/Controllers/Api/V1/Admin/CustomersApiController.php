@@ -41,6 +41,100 @@ class CustomersApiController extends Controller
         $this->onesignal_client = new OneSignalClient(env('ONESIGNAL_APP_ID_MEMBER'), env('ONESIGNAL_REST_API_KEY_MEMBER'), '');
     }
 
+    public function reservationHistoryDetails(Request $request)
+    {
+        $orders = Order::with('customers')
+            ->with('availabilities')
+            ->where('id', '=', $request->order_id)
+            ->first();
+
+
+        //Check if history found or not.
+        if ($orders->variant == "online") {
+            $date_now = date('Y-m-d H:i:s');
+            $date_reservation = date('Y-m-d H:i:s', strtotime($orders->register . " " . $orders->availabilities[0]->start));
+            $date_reservation_exp = date('Y-m-d H:i:s', strtotime($orders->register . " " . $orders->availabilities[0]->end));
+            $show = "0";
+            if ($date_now < $date_reservation) {
+                // if ($status == "activated") {
+                // $show = "1";
+                // } else if ($date_now < $date_reservation_exp) {
+                //     $show = "1";
+                // } else if ($status == "close") {
+                //     $show = "1";
+                // } else {
+                //     $show = "0";
+                // }
+
+
+                $show = "1";
+            }
+            $message = 'Online.';
+            $status = true;
+            return response()->json([
+                'status' => $status,
+                'message' => $message,
+                'data' => $orders,
+                'show' => $show
+            ]);
+        } else {
+            $message = 'Offline.';
+            $status = true;
+            return response()->json([
+                'status' => $status,
+                'message' => $message,
+                'data' => $orders,
+            ]);
+        }
+    }
+
+    public function reservationExpertHistory(Request $request)
+    {
+        if (isset($request->page)) {
+            $orders = Order::selectRaw("orders.*,availabilities.day_id as day_id,clinic_customer.customer_id as expert_id")
+                ->join('order_availability', 'order_availability.order_id', '=', 'orders.id')
+                ->join('availabilities', 'availabilities.id', '=', 'order_availability.availability_id')
+                ->join('clinic_customer', 'clinic_customer.id', '=', 'availabilities.clinic_customer_id')
+                ->with('customers')
+                ->with('availabilities')
+                ->where('orders.type', 'reservation')
+                ->FilterExpert()
+                ->FilterExpertDateDay()
+                ->orderBy('orders.id', 'DESC')
+                ->paginate(10, ['*'], 'page', $request->page);
+        } else {
+            $orders = Order::selectRaw("orders.*,availabilities.day_id as day_id,clinic_customer.customer_id as expert_id")
+                ->join('order_availability', 'order_availability.order_id', '=', 'orders.id')
+                ->join('availabilities', 'availabilities.id', '=', 'order_availability.availability_id')
+                ->join('clinic_customer', 'clinic_customer.id', '=', 'availabilities.clinic_customer_id')
+                ->with('customers')
+                ->with('availabilities')
+                ->where('orders.type', 'reservation')
+                ->FilterExpert()
+                ->FilterExpertDateDay()
+                ->orderBy('orders.id', 'DESC')
+                ->get();
+        }
+
+        //Check if history found or not.
+        if (is_null($orders)) {
+            $message = 'History Order not found.';
+            $status = false;
+            return response()->json([
+                'status' => $status,
+                'message' => $message,
+            ]);
+        } else {
+            $message = 'History retrieved successfully.';
+            $status = true;
+            return response()->json([
+                'status' => $status,
+                'message' => $message,
+                'data' => $orders,
+            ]);
+        }
+    }
+
     public function reservationHistory(Request $request)
     {
         if (isset($request->page)) {
@@ -81,7 +175,6 @@ class CustomersApiController extends Controller
     public function reservation(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'memo' => 'required',
             'customers_id' => 'required',
         ]);
         if ($validator->fails()) {
@@ -106,6 +199,87 @@ class CustomersApiController extends Controller
             ]);
         }
     }
+
+
+    // 13-11-2023 start
+    public function recervationStatus(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required',
+            'status' => 'required',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors(),
+            ], 401);
+        } else {
+            try {
+                if ($request->firebase_threads_id != "") {
+                    $order = Order::where('id', $request->id)
+                        ->update([
+                            'status' => $request->status,
+                            'firebase_threads_id' => $request->firebase_threads_id
+                        ]);
+                } else {
+                    $order = Order::where('id', $request->id)
+                        ->update([
+                            'status' => $request->status,
+                        ]);
+                }
+            } catch (QueryException $exception) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data Kosong.',
+                ], 401);
+            }
+
+            return response()->json([
+                'order' => $order,
+                'request' => $request->id,
+                'requesta' => $request->status,
+                'success' => true,
+                'message' => 'Reservasi Diupdate.',
+            ]);
+        }
+    }
+
+
+    public function pushOnesignal(Request $request)
+    {
+        $customer = CustomerApi::where('id', $request->id)->first();
+        $id_onesignal  = $customer->id_onesignal;
+        $memo = $request->memo;
+
+        if (!empty($id_onesignal)) {
+
+            $this->onesignal_client->sendNotificationToUser(
+
+                $memo,
+
+                $id_onesignal,
+
+                $url = null,
+
+                $data = null,
+
+                $buttons = null,
+
+                $schedule = null
+
+            );
+            return response()->json([
+                'success' => true,
+                'data' => $customer->id_onesignal,
+                'memo' => $memo,
+            ]);
+        }
+        return response()->json([
+            'success' => true,
+            'data' => $customer->id_onesignal,
+        ]);
+    }
+    // 13-11-2023 end
 
     public function testPairing(Request $request)
     {
@@ -376,7 +550,6 @@ class CustomersApiController extends Controller
             'success' => true,
             'message' => 'Update Log Status is success.',
         ]);
-
     }
 
     public function logsUnread(Request $request)
@@ -669,11 +842,39 @@ class CustomersApiController extends Controller
         }
     }
 
+    public function recervationReceived(Request $request)
+    {
+        $order = Order::selectRaw("orders.*")
+            ->join('order_availability', 'order_availability.order_id', '=', 'orders.id')
+            ->where('order_availability.qr_code', $request->qr_code)
+            ->first();
+        if (!empty($order) && trim($request->qr_code) != '') {
+            //update order status delivery
+            $order->status_delivery = 'received';
+            $order->save();
+            //return
+            $message = 'QR Code Berhasil Dikenali.';
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+            ]);
+        } else {
+            $message = 'QR Code Tidak Dikenali.';
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+            ], 401);
+        }
+    }
+
     public function login()
     {
 
         $user = CustomerApi::where('email', request('email'))
-            ->where('type', 'member')
+            ->where(function ($qry) {
+                $qry->where('type', 'member')
+                    ->orWhere('type', 'expert');
+            })
             ->where('status', '!=', 'close')
             ->with(['activations', 'refferal', 'provinces', 'city'])
             ->first();
@@ -710,7 +911,8 @@ class CustomersApiController extends Controller
                     'success' => false,
                     'message' => $message,
                 ], 401);
-            }} else {
+            }
+        } else {
             $message = 'Email & Password yang Anda masukkan salah. Salah memasukkan Email & Password lebih dari 3x maka Account akan otomatis di blokir.';
             return response()->json([
                 'success' => false,
@@ -1239,7 +1441,6 @@ class CustomersApiController extends Controller
                 ], 401);
             }
         }
-
     }
 
     public function logout(Request $res)
@@ -1350,5 +1551,4 @@ class CustomersApiController extends Controller
             ]);
         }
     }
-
 }

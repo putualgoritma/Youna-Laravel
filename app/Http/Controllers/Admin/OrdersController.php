@@ -33,6 +33,32 @@ class OrdersController extends Controller
         $this->onesignal_client = new OneSignalClient(env('ONESIGNAL_APP_ID_MEMBER'), env('ONESIGNAL_REST_API_KEY_MEMBER'), '');
     }
 
+    public function reservationApproved($id)
+    {
+        abort_if(Gate::denies('order_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $order = Order::find($id);
+        $accounts = Account::select('*')
+            ->where('accounts_group_id', 1)
+            ->get();
+
+        return view('admin.orders.reservationapproved', compact('order', 'accounts'));
+    }
+
+    public function reservationApprovedProcess(Request $request)
+    {
+        abort_unless(\Gate::allows('order_show'), 403);
+        if ($request->has('status')) {
+            //get
+            $order = Order::find($request->input('id'));
+
+            $order->status = 'approved';
+            $order->save();
+        }
+        return redirect()->route('admin.orders.index');
+
+    }
+
     public function approved($id)
     {
         abort_if(Gate::denies('order_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
@@ -249,6 +275,24 @@ class OrdersController extends Controller
     {
         abort_if(Gate::denies('order_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
+        // $query = Order::with('products')
+        //     ->with('customers')
+        //     ->with('accounts')
+        //     ->with('availabilities')
+        //     ->FilterInput()
+        //     ->FilterCustomer()
+        //     ->FilterStatus()
+        //     ->orderBy("register", "desc")->get();
+        // foreach ($query as $key => $item) {
+        //     foreach ($item->availabilities as $key => $availability) {
+        //         echo $availability->clinicCustomers->customers->name;
+        //         if ($availability->clinic_customers > 0) {
+        //             echo $item->clinic_customers . "</br>";
+        //         }}
+        // }
+        // return('lol');
+        //return ($query);
+
         //$from = !empty($request->from) ? $request->from : date('Y-m-01');
         $from = !empty($request->from) ? $request->from : '';
         $to = !empty($request->to) ? $request->to : date('Y-m-d');
@@ -258,6 +302,7 @@ class OrdersController extends Controller
             $query = Order::with('products')
                 ->with('customers')
                 ->with('accounts')
+                ->with('availabilities')
                 ->FilterInput()
                 ->FilterCustomer()
                 ->FilterStatus()
@@ -334,7 +379,16 @@ class OrdersController extends Controller
                 return $product_list;
             });
 
-            $table->rawColumns(['actions', 'placeholder', 'product']);
+            $table->editColumn('availability', function ($row) {
+                $availability_list = '<ul>';
+                foreach ($row->availabilities as $key => $item) {
+                    $availability_list .= '<li>' . $item->clinicCustomers->clinics->name ." - ". $item->clinicCustomers->customers->name .  " - ". $item->days->name .  " - ". $item->pivot->date . '</li>';
+                }
+                $availability_list .= '</ul>';
+                return $availability_list;
+            });
+
+            $table->rawColumns(['actions', 'placeholder', 'product', 'availability']);
 
             $table->addIndexColumn();
             return $table->make(true);
@@ -577,6 +631,7 @@ class OrdersController extends Controller
             $order->products()->detach();
             $order->productdetails()->detach();
             $order->points()->detach();
+            $order->availabilities()->detach();
 
             //update pivot BVPairingQueue
             $pairingqueues = BVPairingQueue::where('order_id', $order->id)->get();
